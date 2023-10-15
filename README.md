@@ -4,6 +4,8 @@ Light-weight API for scanning Unturned asset files (v1 and v2).
 
 Uses `Microsoft.Extensions.Logging.Abstractions`.
 
+NuGet: [DanielWillett.UnturnedAssets](https://www.nuget.org/packages/DanielWillett.UnturnedAssets)
+
 ## Usage
 
 ### Scan a Folder Recursively
