@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34112.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnturnedAssets", "UnturnedAssets\UnturnedAssets.csproj", "{40F2FA83-4500-4B82-ACB5-ACF80C89A6FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{40F2FA83-4500-4B82-ACB5-ACF80C89A6FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40F2FA83-4500-4B82-ACB5-ACF80C89A6FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40F2FA83-4500-4B82-ACB5-ACF80C89A6FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40F2FA83-4500-4B82-ACB5-ACF80C89A6FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9415660E-C8B0-4843-A8B2-D6BB7D497CBE}
+	EndGlobalSection
+EndGlobal
