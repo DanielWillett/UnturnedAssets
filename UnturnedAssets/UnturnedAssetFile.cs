@@ -2,21 +2,62 @@
 using System.Globalization;
 
 namespace UnturnedAssets;
+
+/// <summary>
+/// Represents any asset file from either v1 or v2 files ending in either .dat or .asset.
+/// </summary>
+/// <remarks>Read more about it on the Unturned wiki: <see href="https://docs.smartlydressedgames.com/en/stable/assets/data-file-format.html#history"/>.</remarks>
 public class UnturnedAssetFile
 {
     private bool _cachedLocal;
     private bool _cachedFriendlyName;
     private DatDictionary? _local;
     private string? _friendlyName;
+
+    /// <summary>
+    /// Internal asset name. This is usually the name of the file or the folder it's in.
+    /// </summary>
     public string AssetName { get; }
+
+    /// <summary>
+    /// Path to the localization (Language.dat) file if it exists.
+    /// </summary>
     public string? LocalPath { get; }
+
+    /// <summary>
+    /// <see cref="FileInfo"/> for the main asset file.
+    /// </summary>
     public FileInfo File { get; }
+
+    /// <summary>
+    /// Data from the main asset file.
+    /// </summary>
     public DatDictionary Dictionary { get; }
+
+    /// <summary>
+    /// SDG asset type. Always derives from <see cref="Asset"/>.
+    /// </summary>
     public Type AssetType { get; }
+
+    /// <summary>
+    /// Asset GUID.
+    /// </summary>
     public Guid Guid { get; }
+
+    /// <summary>
+    /// Asset 16 bit ID, or zero if there is none.
+    /// </summary>
     public ushort Id { get; }
+
+    /// <summary>
+    /// Asset category, or <see cref="EAssetType.NONE"/> if there is none.
+    /// </summary>
     public EAssetType Category { get; }
 
+    /// <summary>
+    /// Localized name, depending on the language specified. It will fall back to English.
+    /// </summary>
+    /// <remarks>This will return <see langword="null"/> if it's not available, not fall back to the <see cref="AssetName"/>. Use <see cref="FriendlyNameOrAssetName"/> for this.</remarks>
     public string? FriendlyName
     {
         get
@@ -33,6 +74,9 @@ public class UnturnedAssetFile
 
     public string FriendlyNameOrAssetName => FriendlyName ?? AssetName;
 
+    /// <summary>
+    /// Data from the localization file depending on the language specified, if it exists. It will fall back to English.
+    /// </summary>
     public DatDictionary? Local
     {
         get
@@ -42,10 +86,17 @@ public class UnturnedAssetFile
             return _local;
         }
     }
+
+    /// <summary>
+    /// Language this instance was initialized with.
+    /// </summary>
+    public string Language { get; }
+
     public UnturnedAssetFile(Type assetType, FileInfo file, Guid guid, ushort id, DatDictionary dictionary, string language = "English")
     {
         AssetType = assetType;
         File = file;
+        Language = language;
 
         // if file name is 'Asset.dat', get the asset name from the parent folder.
         if (file.FullName.EndsWith("Asset.dat", StringComparison.Ordinal))
@@ -87,6 +138,7 @@ public class UnturnedAssetFile
             Category = EAssetType.NPC;
         else Category = EAssetType.NONE;
     }
+
     internal void CacheLocal(DatParser? parser = null)
     {
         _cachedLocal = true;

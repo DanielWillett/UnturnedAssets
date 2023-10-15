@@ -2,17 +2,23 @@
 using SDG.Unturned;
 
 namespace UnturnedAssets;
+
+/// <summary>
+/// Recursively searches for unturned asset files and interprets them as <see cref="UnturnedAssetFile"/>.
+/// </summary>
+/// <remarks>This class should be disposed of afterwards.</remarks>
 public class UnturnedAssetFinder : IDisposable
 {
     internal const int MaxFileSize = 8388608; // 8MB
 
     private readonly DatParser _parser = new DatParser();
-    private readonly ILogger<UnturnedAssetFinder> _logger;
+    private readonly ILogger<UnturnedAssetFinder>? _logger;
     private static UnturnedNexus? _nexus;
     private static volatile int _semaphoreQueue;
     private volatile int _disposed;
-
-    public UnturnedAssetFinder(ILogger<UnturnedAssetFinder> logger)
+    
+    /// <param name="logger">Can be <see langword="null"/> to disable logging.</param>
+    public UnturnedAssetFinder(ILogger<UnturnedAssetFinder>? logger)
     {
         Interlocked.Increment(ref _semaphoreQueue);
 
@@ -53,6 +59,13 @@ public class UnturnedAssetFinder : IDisposable
             }
         }
     }
+
+    /// <summary>
+    /// Returns a list of all asset files in the directory or its subdirectories.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB.</remarks>
     public async Task<List<UnturnedAssetFile>> ScanAsync(string folder, string language = "English", CancellationToken token = default)
     {
         if (_disposed > 0 || _nexus == null)
@@ -99,14 +112,21 @@ public class UnturnedAssetFinder : IDisposable
             }, token));
         }
 
-        await Task.WhenAll(waiting);
+        await Task.WhenAll(waiting).ConfigureAwait(false);
 
-        _logger.LogDebug($"Assets discovered: {rtn.Count}.");
+        _logger?.LogDebug($"Assets discovered: {rtn.Count}.");
         lock (rtn)
         {
             return rtn;
         }
     }
+
+    /// <summary>
+    /// Returns a list of all asset files in the directory or its subdirectories.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB.</remarks>
     public List<UnturnedAssetFile> Scan(string folder, string language = "English")
     {
         if (_disposed > 0 || _nexus == null)
@@ -148,9 +168,78 @@ public class UnturnedAssetFinder : IDisposable
             }
         }
 
-        _logger.LogDebug($"Assets discovered: {rtn.Count}.");
+        _logger?.LogDebug($"Assets discovered: {rtn.Count}.");
         return rtn;
     }
+
+    /// <summary>
+    /// Read one asset file's content and returns an <see cref="UnturnedAssetFile"/> representation, or <see langword="null"/> if the file is not a valid asset, doesn't exist, or is too big.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
+    public UnturnedAssetFile? TryRead(string file, string language = "English")
+        => TryRead(new FileInfo(file), language);
+
+    /// <summary>
+    /// Read one asset file's content and returns an <see cref="UnturnedAssetFile"/> representation, or <see langword="null"/> if the file is not a valid asset, doesn't exist, or is too big.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
+    public UnturnedAssetFile? TryRead(FileInfo file, string language = "English")
+    {
+        if (_disposed > 0)
+            throw new ObjectDisposedException(nameof(UnturnedAssetFinder));
+
+        if (!file.Exists)
+            return null;
+        DatDictionary? data = ReadFile(file.FullName);
+        if (data == null)
+            return null;
+
+        UnturnedAssetFile? asset = TryRead(data, file, language);
+        asset?.CacheLocal(_parser);
+        return asset;
+    }
+
+    /// <summary>
+    /// Read one asset file's content and returns a <see cref="UnturnedAssetFile"/> representation, or <see langword="null"/> if the file is not a valid asset, doesn't exist, or is too big.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
+    public Task<UnturnedAssetFile?> TryReadAsync(string file, string language = "English")
+        => TryReadAsync(new FileInfo(file), language);
+
+    /// <summary>
+    /// Read one asset file's content and returns an <see cref="UnturnedAssetFile"/> representation, or <see langword="null"/> if the file is not a valid asset, doesn't exist, or is too big.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
+    public async Task<UnturnedAssetFile?> TryReadAsync(FileInfo file, string language = "English")
+    {
+        if (_disposed > 0)
+            throw new ObjectDisposedException(nameof(UnturnedAssetFinder));
+
+        if (!file.Exists)
+            return null;
+        DatDictionary? data = await ReadFileAsync(file.FullName).ConfigureAwait(false);
+        if (data == null)
+            return null;
+
+        UnturnedAssetFile? asset = TryRead(data, file, language);
+        asset?.CacheLocal(_parser);
+        return asset;
+    }
+
+    /// <summary>
+    /// Read one asset file's <see cref="DatDictionary"/> and returns an <see cref="UnturnedAssetFile"/> representation, or <see langword="null"/> if the file is not a valid asset.
+    /// </summary>
+    /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
+    /// <exception cref="ObjectDisposedException"/>
+    /// <remarks>Has a max file size of 8MB.</remarks>
     public UnturnedAssetFile? TryRead(DatDictionary dictionary, FileInfo file, string language = "English")
     {
         if (_disposed > 0 || _nexus == null)
@@ -216,10 +305,14 @@ public class UnturnedAssetFinder : IDisposable
     }
     private void ReportError(FileInfo file, string message)
     {
-        _logger.LogWarning($"Asset \"{Path.GetFileNameWithoutExtension(file.FullName)}\" load error: \"{message}\".{Environment.NewLine}\tFile: {file.FullName}");
+        _logger?.LogWarning($"Asset \"{Path.GetFileNameWithoutExtension(file.FullName)}\" load error: \"{message}\".{Environment.NewLine}\tFile: {file.FullName}");
     }
 
-    private DatDictionary? ReadFile(string path)
+    /// <summary>
+    /// Reads a <see cref="DatDictionary"/> from an asset or localization file.
+    /// </summary>
+    /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
+    public DatDictionary? ReadFile(string path)
     {
         using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (fileStream.Length > MaxFileSize)
@@ -232,7 +325,12 @@ public class UnturnedAssetFinder : IDisposable
         lock (_parser)
             return _parser.Parse(inputReader);
     }
-    private async Task<DatDictionary?> ReadFileAsync(string path, CancellationToken token = default)
+
+    /// <summary>
+    /// Reads a <see cref="DatDictionary"/> from an asset or localization file asynchronously.
+    /// </summary>
+    /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
+    public async Task<DatDictionary?> ReadFileAsync(string path, CancellationToken token = default)
     {
 #if NETCOREAPP || NETSTANDARD
         await using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
