@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using SDG.Unturned;
-
-namespace UnturnedAssets;
+﻿namespace UnturnedAssets;
 
 /// <summary>
 /// Recursively searches for unturned asset files and interprets them as <see cref="UnturnedAssetFile"/>.
@@ -97,7 +94,7 @@ public class UnturnedAssetFinder : IDisposable
             else continue;
             waiting.Add(Task.Run(async () =>
             {
-                DatDictionary? dict = await ReadFileAsync(info.FullName, token).ConfigureAwait(false);
+                IDatDictionary? dict = await ReadFileAsync(info.FullName, token).ConfigureAwait(false);
                 if (dict == null)
                     return;
                 
@@ -156,7 +153,7 @@ public class UnturnedAssetFinder : IDisposable
                     continue;
             }
             else continue;
-            DatDictionary? dict = ReadFile(info.FullName);
+            IDatDictionary? dict = ReadFile(info.FullName);
             if (dict == null)
                 continue;
             UnturnedAssetFile? asset = TryRead(dict, info, language);
@@ -194,7 +191,7 @@ public class UnturnedAssetFinder : IDisposable
 
         if (!file.Exists)
             return null;
-        DatDictionary? data = ReadFile(file.FullName);
+        IDatDictionary? data = ReadFile(file.FullName);
         if (data == null)
             return null;
 
@@ -225,7 +222,7 @@ public class UnturnedAssetFinder : IDisposable
 
         if (!file.Exists)
             return null;
-        DatDictionary? data = await ReadFileAsync(file.FullName).ConfigureAwait(false);
+        IDatDictionary? data = await ReadFileAsync(file.FullName).ConfigureAwait(false);
         if (data == null)
             return null;
 
@@ -240,7 +237,7 @@ public class UnturnedAssetFinder : IDisposable
     /// <param name="language">Helps pick a localization file if multiple are present. Always falls back to English.</param>
     /// <exception cref="ObjectDisposedException"/>
     /// <remarks>Has a max file size of 8MB.</remarks>
-    public UnturnedAssetFile? TryRead(DatDictionary dictionary, FileInfo file, string language = "English")
+    public UnturnedAssetFile? TryRead(IDatDictionary dictionary, FileInfo file, string language = "English")
     {
         if (_disposed > 0 || _nexus == null)
             throw new ObjectDisposedException(nameof(UnturnedAssetFinder));
@@ -250,7 +247,7 @@ public class UnturnedAssetFinder : IDisposable
             ushort id = 0;
             Type? assetType = null;
             // v2 metadata
-            if (dictionary.TryGetDictionary("Metadata", out DatDictionary metadata))
+            if (dictionary.TryGetDictionary("Metadata", out IDatDictionary metadata))
             {
                 if (!metadata.TryParseGuid("Guid", out guid))
                 {
@@ -312,7 +309,7 @@ public class UnturnedAssetFinder : IDisposable
     /// Reads a <see cref="DatDictionary"/> from an asset or localization file.
     /// </summary>
     /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
-    public DatDictionary? ReadFile(string path)
+    public IDatDictionary? ReadFile(string path)
     {
         using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (fileStream.Length > MaxFileSize)
@@ -330,7 +327,7 @@ public class UnturnedAssetFinder : IDisposable
     /// Reads a <see cref="DatDictionary"/> from an asset or localization file asynchronously.
     /// </summary>
     /// <remarks>Has a max file size of 8MB. Returns <see langword="null"/> if the file is too big.</remarks>
-    public async Task<DatDictionary?> ReadFileAsync(string path, CancellationToken token = default)
+    public async Task<IDatDictionary?> ReadFileAsync(string path, CancellationToken token = default)
     {
 #if NETCOREAPP || NETSTANDARD
         await using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);

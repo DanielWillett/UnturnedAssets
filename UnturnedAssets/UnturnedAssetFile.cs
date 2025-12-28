@@ -1,5 +1,4 @@
-﻿using SDG.Unturned;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace UnturnedAssets;
 
@@ -11,7 +10,7 @@ public class UnturnedAssetFile
 {
     private bool _cachedLocal;
     private bool _cachedFriendlyName;
-    private DatDictionary? _local;
+    private IDatDictionary? _local;
     private string? _friendlyName;
 
     /// <summary>
@@ -32,7 +31,7 @@ public class UnturnedAssetFile
     /// <summary>
     /// Data from the main asset file.
     /// </summary>
-    public DatDictionary Dictionary { get; }
+    public IDatDictionary Dictionary { get; }
 
     /// <summary>
     /// SDG asset type. Always derives from <see cref="Asset"/>.
@@ -64,7 +63,7 @@ public class UnturnedAssetFile
         {
             if (_cachedFriendlyName)
                 return _friendlyName!;
-            DatDictionary? lcl = Local;
+            IDatDictionary? lcl = Local;
             if (lcl != null)
                 lcl.TryGetString("Name", out _friendlyName);
             _cachedFriendlyName = true;
@@ -77,7 +76,7 @@ public class UnturnedAssetFile
     /// <summary>
     /// Data from the localization file depending on the language specified, if it exists. It will fall back to English.
     /// </summary>
-    public DatDictionary? Local
+    public IDatDictionary? Local
     {
         get
         {
@@ -92,7 +91,7 @@ public class UnturnedAssetFile
     /// </summary>
     public string Language { get; }
 
-    public UnturnedAssetFile(Type assetType, FileInfo file, Guid guid, ushort id, DatDictionary dictionary, string language = "English")
+    public UnturnedAssetFile(Type assetType, FileInfo file, Guid guid, ushort id, IDatDictionary dictionary, string language = "English")
     {
         AssetType = assetType;
         File = file;
